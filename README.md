@@ -11,6 +11,12 @@ A Lovelace card for [BirdNET-Go](https://github.com/tphakala/birdnet-go) detecti
 
 > **Beta release.** Things may change between versions. Please report problems in the [issue tracker](../../issues).
 
+## Screenshots
+
+<img width="381" height="135" alt="image" src="https://github.com/user-attachments/assets/d813d4f9-0a4b-45ac-9c7a-fe5cd436cc72" /> <img width="274" height="135" alt="image" src="https://github.com/user-attachments/assets/2d48c35f-0fbe-4dc1-ae15-7ed2108e088d" /> <img width="224" height="135" alt="image" src="https://github.com/user-attachments/assets/cce0015c-a099-49a1-a339-566c6eb02017" />
+
+
+
 
 ## Tabs
 
