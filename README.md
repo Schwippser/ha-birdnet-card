@@ -33,6 +33,23 @@ Species images come from Wikipedia (switchable); a click on the image opens the 
    - Copy it to `/config/packages/` and make sure `configuration.yaml` contains `homeassistant: packages: !include_dir_named packages`.
    - If your BirdNET-Go device is not called "garten", replace `birdnet_go_garten` in the file.
    - Restart Home Assistant. The statistics fill with every new detection.
+  
+## Installing the evaluation package
+
+The card does not read BirdNET-Go directly. It needs a few sensors that the evaluation package [`packages/birdnet_auswertung.yaml`](packages/birdnet_auswertung.yaml) creates from the MQTT detections of BirdNET-Go.
+
+1. **Check the MQTT entities.** In *Settings → Devices & services → MQTT* your BirdNET-Go device should provide `sensor.birdnet_go_<name>_last_species`, `_confidence` and `_scientific_name`. The package expects the device name `garten`.
+2. **Copy the file** `birdnet_auswertung.yaml` to `/config/packages/` (create the folder if it does not exist).
+3. **Enable packages** in `configuration.yaml` (skip this if you already use packages):
+   ```yaml
+   homeassistant:
+     packages: !include_dir_named packages
+   ```
+4. **Adjust the device name.** If your device is not called `garten`, open the file and replace `birdnet_go_garten` everywhere (search and replace).
+5. **Notification (optional).** The automation "BirdNET neue Art heute" reports a new species of the day. Change `notify.notify` to your own service, e.g. `notify.mobile_app_<phone>`. If your confidence comes in percent (e.g. 87), change `above: 0.79` to `79`. Delete the `automation:` block if you do not want notifications.
+6. **Check the configuration** (*Developer tools → YAML → Check configuration*) and **restart Home Assistant**. A template reload is not enough and can reset the daily counters.
+
+Created sensors: `sensor.birdnet_erkennungen_heute`, `sensor.birdnet_statistik`, `sensor.birdnet_arten_heute`, `sensor.birdnet_top_art_heute`. The statistics start empty and fill with every new detection, so earlier detections do not appear.
 
 ## Installation via HACS (custom repository)
 
