@@ -1,0 +1,79 @@
+# HA BirdNET Card
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+![Status](https://img.shields.io/badge/status-beta-yellow)
+
+<a href="https://www.buymeacoffee.com/tomreim0s" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
+*[English version](README.md)*
+
+Lovelace-Karte für die Erkennungen von [BirdNET-Go](https://github.com/tphakala/birdnet-go) in Home Assistant, nach dem Vorbild der BirdNET-Go-Oberfläche. Eine Karte mit drei Tabs und visuellem Editor.
+
+> **Beta-Version.** Zwischen Versionen kann sich etwas ändern. Probleme bitte im [Issue-Tracker](../../issues) melden.
+
+
+## Tabs
+
+- **Übersicht** – Tagesaktivität (Erkennungen pro Stunde und Art, mit Tageslicht-Leiste und der Datumsauswahl des Energie-Dashboards), „Gerade gehört“, neue und zurückkehrende Arten
+- **Analysen – Zusammenfassung** – Kennzahlen, Top 10 Arten, Erkennungen nach Tageszeit, Trend, aktuelle Erkennungen
+- **Arten – Analysen** – Artenliste als Kacheln oder Liste, sortierbar nach Erkennungen, Name, zum ersten/zuletzt gesehen, Konfidenz und maximaler Konfidenz, mit Suche
+
+Die Artenbilder kommen von Wikipedia (abschaltbar). Ein Klick auf das Bild öffnet den Wikipedia-Artikel in der Sprache deines Home Assistant. Helle und dunkle Styles werden unterstützt.
+
+## Voraussetzungen
+
+1. BirdNET-Go sendet an einen MQTT-Broker, den Home Assistant nutzt (MQTT-Discovery).
+2. Das Auswertungs-Package [`packages/birdnet_auswertung.yaml`](packages/birdnet_auswertung.yaml). Es macht aus den Erkennungen die Sensoren, die die Karte braucht (`sensor.birdnet_erkennungen_heute`, `sensor.birdnet_statistik`).
+   - Nach `/config/packages/` kopieren; in der `configuration.yaml` muss `homeassistant: packages: !include_dir_named packages` stehen.
+   - Heißt dein BirdNET-Go-Gerät nicht „garten“, ersetze `birdnet_go_garten` in der Datei.
+   - Home Assistant neu starten. Die Statistik füllt sich mit jeder neuen Erkennung.
+
+## Installation über HACS (benutzerdefiniertes Repository)
+
+1. In Home Assistant **HACS → ⋮ → Benutzerdefinierte Repositories** öffnen.
+2. `https://github.com/Schwippser/ha-birdnet-card` mit dem Typ **Dashboard** hinzufügen.
+3. **HA BirdNET Card** installieren (für Beta-Versionen *Beta-Versionen anzeigen* aktivieren).
+4. Browser neu laden (Strg+F5).
+
+## Manuelle Installation
+
+1. `ha-birdnet-card.zip` aus dem neuesten [Release](../../releases) laden und nach `config/www/ha-birdnet-card/` entpacken (Skript und Ordner `translations` zusammen).
+2. Die Ressource `/local/ha-birdnet-card/ha-birdnet-card.js` vom Typ *JavaScript-Modul* hinzufügen.
+3. Browser neu laden (Strg+F5).
+
+## Verwendung
+
+Karte hinzufügen und **BirdNET** wählen, oder per YAML (mehr in [`examples/dashboard.yaml`](examples/dashboard.yaml)):
+
+```yaml
+type: custom:ha-birdnet-card
+entity: sensor.birdnet_erkennungen_heute
+bn_stats_entity: sensor.birdnet_statistik
+```
+
+| Option | Standard | Beschreibung |
+|---|---|---|
+| `entity` | `sensor.birdnet_erkennungen_heute` | Tageszähler aus dem Package |
+| `bn_stats_entity` | `sensor.birdnet_statistik` | Statistik-Sensor aus dem Package |
+| `bn_default_tab` | `overview` | `overview`, `analysis` oder `species` |
+| `follow_energy_date` | `true` | folgt der Datumsauswahl des Energie-Dashboards |
+| `hm_max_rows` / `hm_sort` | `10` / `total` | Zeilen und Sortierung der Aktivitätstabelle |
+| `hm_show_daylight` / `hm_sun_entity` | `true` / `sun.sun` | Tageslicht-Leiste |
+| `bn_wiki_images` | `true` | Artenbilder von Wikipedia laden |
+| `bn_image_url` | – | eigene Bildquelle mit `{name}` / `{sci}`, hat Vorrang |
+
+## Hinweis zum Datenschutz
+
+Bei eingeschaltetem `bn_wiki_images` fragt dein Browser Artenbilder und Artikeldaten bei wikipedia.org ab (lateinischer oder deutscher Artname). Zum Vermeiden die Option ausschalten.
+
+## Zusammen mit dem HA Ultimate Card Package
+
+Beides kann gleichzeitig installiert sein. Der Kartentyp `birdnet` des Packages und diese Einzelkarte entstehen aus demselben Quelltext. Übersetzungen werden von dem geladen, das zuerst startet; halte daher beides aktuell.
+
+## Übersetzungen
+
+Englisch ist Standard. Deutsch liegt in `translations/de.json` (flach `"English text": "Übersetzung"`). Es gilt die Sprache des Home-Assistant-Benutzers. Für eine neue Sprache `de.json` kopieren, Werte übersetzen und einen Pull Request öffnen.
+
+## Lizenz
+
+[MIT](LICENSE)

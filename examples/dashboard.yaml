@@ -1,0 +1,20 @@
+# Example 1: card with the default settings
+type: custom:ha-birdnet-card
+---
+# Example 2: all options
+type: custom:ha-birdnet-card
+name: BirdNET
+icon: mdi:bird
+entity: sensor.birdnet_erkennungen_heute        # daily counter from the package (activity)
+bn_stats_entity: sensor.birdnet_statistik       # statistics sensor from the package
+bn_default_tab: overview                        # overview | analysis | species
+follow_energy_date: true                        # follow the date selection of the energy dashboard
+hm_max_rows: 10
+hm_sort: total                                  # total | name
+hm_show_values: true
+hm_show_legend: true
+hm_show_daylight: true
+hm_sun_entity: sun.sun
+bn_wiki_images: true                            # species images from Wikipedia
+# bn_image_url: https://example.org/images/{sci}.jpg   # own image source ({name}, {sci}); has priority
+card_style: default
