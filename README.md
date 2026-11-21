@@ -36,6 +36,8 @@ Species images come from Wikipedia (switchable); a click on the image opens the 
 
 ## Installation via HACS (custom repository)
 
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Schwippser&repository=ha-birdnet-card&category=dashboard)
+
 1. In Home Assistant open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Schwippser/ha-birdnet-card` with type **Dashboard**.
 3. Install **HA BirdNET Card** (enable *Show beta versions* to get beta releases).
