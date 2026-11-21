@@ -31,6 +31,23 @@ Die Artenbilder kommen von Wikipedia (abschaltbar). Ein Klick auf das Bild öffn
    - Nach `/config/packages/` kopieren; in der `configuration.yaml` muss `homeassistant: packages: !include_dir_named packages` stehen.
    - Heißt dein BirdNET-Go-Gerät nicht „garten“, ersetze `birdnet_go_garten` in der Datei.
    - Home Assistant neu starten. Die Statistik füllt sich mit jeder neuen Erkennung.
+  
+## Auswertungs-Package installieren
+
+Die Karte liest BirdNET-Go nicht direkt. Sie braucht einige Sensoren, die das Auswertungs-Package [`packages/birdnet_auswertung.yaml`](packages/birdnet_auswertung.yaml) aus den MQTT-Erkennungen von BirdNET-Go erzeugt.
+
+1. **MQTT-Entitäten prüfen.** Unter *Einstellungen → Geräte & Dienste → MQTT* sollte dein BirdNET-Go-Gerät die Sensoren `sensor.birdnet_go_<name>_last_species`, `_confidence` und `_scientific_name` liefern. Das Package erwartet den Gerätenamen `garten`.
+2. **Datei kopieren:** `birdnet_auswertung.yaml` nach `/config/packages/` kopieren (Ordner anlegen, falls er fehlt).
+3. **Packages aktivieren** in der `configuration.yaml` (entfällt, wenn du Packages schon nutzt):
+   ```yaml
+   homeassistant:
+     packages: !include_dir_named packages
+   ```
+4. **Gerätenamen anpassen.** Heißt dein Gerät nicht `garten`, in der Datei überall `birdnet_go_garten` ersetzen (Suchen und Ersetzen).
+5. **Benachrichtigung (optional).** Die Automation „BirdNET neue Art heute“ meldet eine neue Art des Tages. `notify.notify` durch deinen Dienst ersetzen, z. B. `notify.mobile_app_<handy>`. Kommt die Konfidenz in Prozent (z. B. 87), `above: 0.79` in `79` ändern. Ohne Benachrichtigungen den Block `automation:` löschen.
+6. **Konfiguration prüfen** (*Entwicklerwerkzeuge → YAML → Konfiguration prüfen*) und **Home Assistant neu starten**. Ein Neuladen der Templates reicht nicht und kann die Tageszähler zurücksetzen.
+
+Erzeugte Sensoren: `sensor.birdnet_erkennungen_heute`, `sensor.birdnet_statistik`, `sensor.birdnet_arten_heute`, `sensor.birdnet_top_art_heute`. Die Statistik startet leer und füllt sich mit jeder neuen Erkennung, frühere Erkennungen erscheinen also nicht.
 
 ## Installation über HACS (benutzerdefiniertes Repository)
 
