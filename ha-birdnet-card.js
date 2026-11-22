@@ -532,6 +532,9 @@ function ucpBindTitleIcons(container) {
 // BirdNET: Artbilder und Artikel von Wikipedia (https), einmal geladen und im Browser gemerkt: Schlüssel -> { img, page }
 const UCP_BN_IMG = new Map();
 try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("ucp-bn-img-v2") || "{}"))) if (v?.img) UCP_BN_IMG.set(k, v); } catch { /* ohne Speicher weiter */ }
+const UCP_BN_STATE = new Map();
+let ucpBnChain = Promise.resolve();
+const ucpBnQueue = (job) => { const run = ucpBnChain.then(job, job); ucpBnChain = run.then(() => new Promise((r) => setTimeout(r, 250))); return run; };
 
 class UltimateCardPackage extends HTMLElement {
 
@@ -768,27 +771,38 @@ class UltimateCardPackage extends HTMLElement {
 
   _bnWiki(sci, name) {
     // lateinischer Name: englische Wikipedia; deutscher Artname: deutsche Wikipedia, erst „Name (Art)“, dann „Name“
+    // Anfragen laufen nacheinander (Wikipedia bremst viele gleichzeitige Anfragen aus); bei Fehlern wird später erneut versucht
     const term = String(sci || name || "").trim();
     if (!term) return {};
     const key = sci ? term : `de:${term}`;
-    if (UCP_BN_IMG.has(key)) return UCP_BN_IMG.get(key) || {};
-    UCP_BN_IMG.set(key, null);
+    const hit = UCP_BN_IMG.get(key);
+    if (hit?.img) return hit;
+    const st = UCP_BN_STATE.get(key) || { n: 0, at: 0, busy: false };
+    if (st.busy || st.n >= 6 || Date.now() < st.at) return {};
+    st.busy = true;
+    UCP_BN_STATE.set(key, st);
     const cands = sci ? [["en", term]] : [["de", `${term} (Art)`], ["de", term]];
-    const next = async (i) => {
-      if (i >= cands.length) return null;
+    const next = async (i, transient) => {
+      if (i >= cands.length) return { res: null, transient };
       const [lg, t] = cands[i];
       try {
         const r = await fetch(`https://${lg}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`);
         if (r.ok) {
           const j = await r.json();
           const img = j?.thumbnail?.source;
-          if (j?.type !== "disambiguation" && img && String(img).startsWith("https://")) return { img, page: j?.content_urls?.desktop?.page };
-        }
-      } catch { /* nächster Versuch */ }
-      return next(i + 1);
+          if (j?.type !== "disambiguation" && img && String(img).startsWith("https://")) return { res: { img, page: j?.content_urls?.desktop?.page } };
+        } else if (r.status === 429 || r.status >= 500) transient = true;
+      } catch { transient = true; }
+      return next(i + 1, transient);
     };
-    next(0).then((res) => {
-      if (!res) return;
+    ucpBnQueue(() => next(0, false)).then(({ res, transient }) => {
+      st.busy = false;
+      if (!res) {
+        // Kein Bild gefunden: endgültig; Fehler/Begrenzung: später erneut (4 s, 8 s, 16 s …)
+        st.n = transient ? st.n + 1 : 99;
+        if (transient) { st.at = Date.now() + Math.min(60000, 4000 * 2 ** st.n); setTimeout(() => { if (this.isConnected) this._render(); }, st.at - Date.now() + 50); }
+        return;
+      }
       UCP_BN_IMG.set(key, res);
       try { localStorage.setItem("ucp-bn-img-v2", JSON.stringify(Object.fromEntries([...UCP_BN_IMG].filter(([, v]) => v?.img)))); } catch { /* ohne Speicher weiter */ }
       this._render();
