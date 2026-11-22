@@ -531,7 +531,7 @@ function ucpBindTitleIcons(container) {
 
 // BirdNET: Artbilder und Artikel von Wikipedia (https), einmal geladen und im Browser gemerkt: Schlüssel -> { img, page }
 const UCP_BN_IMG = new Map();
-try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("ucp-bn-img-v2") || "{}"))) if (v?.img) UCP_BN_IMG.set(k, v); } catch { /* ohne Speicher weiter */ }
+try { for (const [k, v] of Object.entries(JSON.parse(localStorage.getItem("ucp-bn-img-v3") || "{}"))) if (v?.img) UCP_BN_IMG.set(k, v); } catch { /* ohne Speicher weiter */ }
 const UCP_BN_STATE = new Map();
 let ucpBnChain = Promise.resolve();
 const ucpBnQueue = (job) => { const run = ucpBnChain.then(job, job); ucpBnChain = run.then(() => new Promise((r) => setTimeout(r, 250))); return run; };
@@ -774,23 +774,28 @@ class UltimateCardPackage extends HTMLElement {
     // Anfragen laufen nacheinander (Wikipedia bremst viele gleichzeitige Anfragen aus); bei Fehlern wird später erneut versucht
     const term = String(sci || name || "").trim();
     if (!term) return {};
-    const key = sci ? term : `de:${term}`;
+    // Schlüssel aus Art- UND Artname: ein falscher wissenschaftlicher Name einer anderen Art darf kein fremdes Bild liefern
+    const key = `${sci ? String(sci).trim() : ""}|${String(name || "").trim()}`;
+    const hl = String(this._hass?.locale?.language || this._hass?.language || "en").split("-")[0].toLowerCase();
+    const norm = (t) => String(t ?? "").toLowerCase().replace(/\s*\(.*?\)\s*$/, "").trim();
     const hit = UCP_BN_IMG.get(key);
     if (hit?.img) return hit;
     const st = UCP_BN_STATE.get(key) || { n: 0, at: 0, busy: false };
     if (st.busy || st.n >= 6 || Date.now() < st.at) return {};
     st.busy = true;
     UCP_BN_STATE.set(key, st);
-    const cands = sci ? [["en", term]] : [["de", `${term} (Art)`], ["de", term]];
+    // Deutsche Artnamen: Seite über den wissenschaftlichen Namen (Weiterleitung) nur akzeptieren, wenn ihr Titel zum Artnamen passt; sonst über den Artnamen suchen
+    const byName = name ? [["de", `${String(name).trim()} (Art)`], ["de", String(name).trim()]] : [];
+    const cands = sci ? (hl === "de" && name ? [["de", term, true], ...byName] : [["en", term]]) : byName;
     const next = async (i, transient) => {
       if (i >= cands.length) return { res: null, transient };
-      const [lg, t] = cands[i];
+      const [lg, t, check] = cands[i];
       try {
         const r = await fetch(`https://${lg}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g, "_"))}`);
         if (r.ok) {
           const j = await r.json();
           const img = j?.thumbnail?.source;
-          if (j?.type !== "disambiguation" && img && String(img).startsWith("https://")) return { res: { img, page: j?.content_urls?.desktop?.page } };
+          if (j?.type !== "disambiguation" && img && String(img).startsWith("https://") && (!check || norm(j?.title) === norm(name))) return { res: { img, page: j?.content_urls?.desktop?.page } };
         } else if (r.status === 429 || r.status >= 500) transient = true;
       } catch { transient = true; }
       return next(i + 1, transient);
@@ -804,7 +809,7 @@ class UltimateCardPackage extends HTMLElement {
         return;
       }
       UCP_BN_IMG.set(key, res);
-      try { localStorage.setItem("ucp-bn-img-v2", JSON.stringify(Object.fromEntries([...UCP_BN_IMG].filter(([, v]) => v?.img)))); } catch { /* ohne Speicher weiter */ }
+      try { localStorage.setItem("ucp-bn-img-v3", JSON.stringify(Object.fromEntries([...UCP_BN_IMG].filter(([, v]) => v?.img)))); } catch { /* ohne Speicher weiter */ }
       this._render();
     });
     return {};
@@ -817,7 +822,9 @@ class UltimateCardPackage extends HTMLElement {
     const term = String(sci || name).trim().replace(/ /g, "_");
     const hl = String(this._hass?.locale?.language || this._hass?.language || "en").split("-")[0].toLowerCase();
     const guess = `https://${sci ? (/^[a-z]{2,3}$/.test(hl) ? hl : "en") : "de"}.wikipedia.org/wiki/${encodeURIComponent(term)}`;
-    const page = sci ? guess : /^https:\/\/de\.wikipedia\.org\//.test(wiki.page || "") ? wiki.page : guess;
+    // Link: die tatsächlich gefundene Seite (passt zum Bild); ohne Treffer bei deutscher Oberfläche über den Artnamen, sonst über den wissenschaftlichen Namen
+    const nameGuess = `https://de.wikipedia.org/wiki/${encodeURIComponent(String(name).trim().replace(/ /g, "_"))}`;
+    const page = /^https:\/\/[a-z]{2,3}\.wikipedia\.org\//.test(wiki.page || "") ? wiki.page : sci && hl !== "de" ? guess : nameGuess;
     return `<a class="bn-pic" href="${ucpEscape(page)}" target="_blank" rel="noopener noreferrer" data-bn-link title="${ucpEscape(name)} – Wikipedia"><span class="bn-ph">${ucpEscape(String(name).charAt(0).toUpperCase())}</span>${url ? `<img src="${ucpEscape(url)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</a>`;
   }
 
