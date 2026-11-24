@@ -1,7 +1,6 @@
 # HA BirdNET Card
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-![Status](https://img.shields.io/badge/status-beta-yellow)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Marketplace-blue) ![version](https://img.shields.io/github/v/release/Schwippser/ha-birdnet-card?include_prereleases&label=version&color=blue) ![status](https://img.shields.io/badge/status-beta-yellow)
 
 <a href="https://www.buymeacoffee.com/tomreim0s" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
