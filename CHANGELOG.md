@@ -2,6 +2,9 @@
 
 ## Einträge
 
+### Installation über den Marketplace (v0.1.3)
+- Das Release-ZIP enthält jetzt die `hacs.json` auf der obersten Ebene. Der eingebaute Marketplace von Home Assistant 2026.11 verlangt sie bei ZIP-Releases, sonst brach die Installation mit einer Fehlermeldung ab. Die Karte selbst ist unverändert.
+
 ### Artbilder und Links zur richtigen Art
 - Das Bild einer Art wird nur übernommen, wenn der Titel der Wikipedia-Seite zum deutschen Artnamen passt. Sonst wird über den Artnamen gesucht, und ohne Treffer bleibt der Buchstabe. Hintergrund: Der wissenschaftliche Name im Sensor kann zur falschen Art gehören, dann stimmten Bild und Link nicht.
 - Der Link eines Bildes führt auf die Seite, aus der das Bild stammt.
