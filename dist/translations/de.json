@@ -119,7 +119,6 @@
   "Image URL (optional)": "Bild-URL (optional)",
   "Species images from the internet": "Artenbilder aus dem Internet",
   "Style wrapper (other cards)": "Style-Hülle (andere Karten)",
-  "Wrapped card (YAML, e.g. type: energy-date-selection)": "Eingebettete Karte (YAML, z. B. type: energy-date-selection)",
   "Vertical padding of the wrapped card (px, default 4)": "Vertikaler Innenabstand der eingebetteten Karte (px, Standard 4)",
   "Dial": "Rad",
   "Period": "Zeitraum",
