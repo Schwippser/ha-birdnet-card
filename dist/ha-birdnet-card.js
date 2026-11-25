@@ -1,14 +1,15 @@
 /* HA BirdNET Card – Einzelkarte, erzeugt aus dem HA Ultimate Card Package (build_birdnet_card.py). Nicht von Hand ändern. */
-/* HA Ultimate Card Package – i18n core (English = source language, translation files in ./translations/<lang>.json) */
+/* HA Ultimate Card Package – i18n core (English = source language, German translation embedded; other languages: ./translations/<lang>.json) */
 (() => {
-  if (globalThis.__UCP_I18N) return;
+  if (globalThis.__UCP_BN_I18N) return;
   const stackUrl = () => { try { return (new Error().stack || "").match(/https?:\/\/[^\s)]+?ha-birdnet-card[^\s):]*\.js[^\s):]*/)?.[0] ?? ""; } catch { return ""; } };
   const scriptUrl = (() => { try { return document.currentScript?.src || stackUrl(); } catch { return ""; } })();
   const base = scriptUrl ? scriptUrl.replace(/[?#].*$/, "").replace(/[^/]*$/, "") : "/local/ha-birdnet-card/";
   const query = (scriptUrl.match(/\?[^#]*/) || [""])[0];
   const state = { dict: null, requested: undefined, cache: {}, listeners: new Set(), seen: new WeakSet() };
   const normalize = (value) => String(value || "en").toLowerCase().replace("_", "-");
-  const loadFile = (code) => state.cache[code] ??= fetch(`${base}translations/${code}.json${query}`, { cache: "no-cache" })
+  const EMBEDDED = {"de":{"Average":"Durchschnitt","Bar":"Bar · Balken","By name":"Nach Name","By total":"Nach Gesamtzahl","Climate":"Climate · Klima","Clock":"Clock · Uhr","Color":"Farbe","Daily":"Täglich","Daylight":"Tageslicht","Double":"Doppelt","E":"O","ESE":"OSO","Edit":"Bearbeiten","Energy":"Energie","Energy Power Flow":"Energy Power Flow (Energiefluss)","Energy Values":"Energy Values · Energiewerte","Entities (one bar per entity)":"Entitäten (ein Balken pro Entität)","Entity":"Entität","Follow energy date selection":"Energy-Date-Selection folgen","Graph":"Graph · Verlauf","Grid":"Raster","Home":"Haus","Icon (optional, e.g. mdi:lightbulb)":"Symbol (optional, z. B. mdi:lightbulb)","Layout":"Darstellung","Less":"Weniger","Light":"Light · Licht","List":"Liste","Maximum rows":"Maximale Zeilenanzahl","Maximum value":"Maximalwert","Mediaplayer":"Mediaplayer · Medienplayer","Minimal":"Minimal","More":"Mehr","Music":"Musik","NE":"NO","Name":"Name","No data yet":"Noch keine Daten","Play":"Abspielen","Please select an entity.":"Bitte eine Entität auswählen.","Popup":"Popup","Power":"Leistung","SE":"SO","Show":"Anzeigen","Show daylight bar":"Tageslicht-Leiste anzeigen","Show legend":"Legende anzeigen","Show values in the cells":"Werte in den Zellen anzeigen","Size":"Größe","Sort rows":"Zeilen sortieren","Species detections per hour":"Artnachweise pro Stunde","State":"State · Zustand","Sun entity (for the daylight bar)":"Sonnen-Entität (für die Tageslicht-Leiste)","Switch":"Switch · Schalter","Name (optional)":"Name (optional)","Tiles":"Kacheln","Title":"Titel","Title (optional)":"Titel (optional)","Today":"Heute","Top":"Oben","Vertical":"Vertikal","Weather Warning":"Wetter-Warnung","from":"ab","pp":"%-Pkt.","{n} detection at {h}:00":"{n} Erkennung um {h}:00 Uhr","{n} detections at {h}:00":"{n} Erkennungen um {h}:00 Uhr","BirdNET":"BirdNET","Overview":"Übersicht","Analysis summary":"Analysen – Zusammenfassung","Species analysis":"Arten – Analysen","Daily activity":"Tagesaktivität","Just heard":"Gerade gehört","Species are identified in real time":"Arten werden in Echtzeit identifiziert","All quiet – no birds detected right now":"Alles ruhig – derzeit keine Vögel erkannt","New and returning species":"Neue und zurückkehrende Arten","First detections and recently returned species":"Erstnachweise und kürzlich zurückgekehrte Arten","{n} detection":"{n} Erkennung","{n} detections":"{n} Erkennungen","Max.":"Max.","Total detections":"Erkennungen gesamt","Unique species":"Einzigartige Arten","Average confidence":"Durchschn. Konfidenz","Most frequent":"Häufigste","Top 10 species":"Top 10 Arten","Detections by time of day":"Erkennungen nach Tageszeit","Night":"Nacht","Morning":"Morgen","Day":"Tag","Evening":"Abend","Detection trend":"Erkennungstrend","Recent detections":"Aktuelle Erkennungen","Date and time":"Datum & Zeit","Species":"Art","Confidence":"Konfidenz","Time of day":"Tageszeit","Species total":"Arten gesamt","Overall average":"Gesamtdurchschnitt","Filter data":"Daten filtern","Sort by":"Sortieren nach","Most detections":"Meiste Erkennungen","Highest confidence":"Höchste Konfidenz","Search species":"Art suchen","Search by name…":"Nach Name suchen…","Species list":"Artenliste","Detections":"Erkennungen","First":"Erste","Statistics entity (BirdNET package)":"Statistik-Entität (BirdNET-Package)","Start tab":"Start-Tab","Fewest detections":"Wenigste Erkennungen","Name (A–Z)":"Name (A–Z)","Name (Z–A)":"Name (Z–A)","Recently first seen":"Kürzlich zum ersten Mal gesehen","Earliest first seen":"Am frühesten zum ersten Mal gesehen","Recently last seen":"Kürzlich zuletzt gesehen","Earliest last seen":"Am frühesten zuletzt gesehen","Lowest confidence":"Niedrigste Konfidenz","Highest max. confidence":"Höchste maximale Konfidenz","Lowest max. confidence":"Niedrigste maximale Konfidenz","Last":"Zuletzt","All time":"Gesamter Zeitraum","Image URL (optional)":"Bild-URL (optional)","Species images from the internet":"Artenbilder aus dem Internet","Style wrapper (other cards)":"Style-Hülle (andere Karten)","Wrapped card (YAML, e.g. type: energy-date-selection)":"Eingebettete Karte (YAML, z. B. type: energy-date-selection)","Vertical padding of the wrapped card (px, default 4)":"Vertikaler Innenabstand der eingebetteten Karte (px, Standard 4)","Dial":"Rad","Period":"Zeitraum","Updates":"Updates","Show updates from":"Updates anzeigen von","Marketplace":"Marketplace","Supervisor":"Supervisor","Home Assistant Supervisor (apps)":"Home Assistant Supervisor (Apps)","Exclude update entities":"Update-Entitäten ausschließen","Show versions":"Versionen anzeigen","Also show up-to-date entries":"Auch aktuelle Einträge anzeigen","Supervisor color (optional)":"Farbe Supervisor (optional)","Marketplace color (optional)":"Farbe Marketplace (optional)"}};
+  const loadFile = (code) => state.cache[code] ??= EMBEDDED[code] ? Promise.resolve(EMBEDDED[code]) : fetch(`${base}translations/${code}.json${query}`, { cache: "no-cache" })
     .then((response) => response.ok ? response.json() : null).catch(() => null);
   async function load(lang) {
     for (const code of [...new Set([lang, lang.split("-")[0]])]) {
@@ -88,17 +89,17 @@
     }).observe(root, { childList: true, characterData: true, subtree: true });
     translateDom(root);
   }
-  globalThis.__UCP_I18N = { t, setLang, attach, schema: (schema) => state.dict ? walkSchema(schema) : schema, translateDom, base,
+  globalThis.__UCP_BN_I18N = { t, setLang, attach, schema: (schema) => state.dict ? walkSchema(schema) : schema, translateDom, base,
     label: (fn) => (...args) => t(fn(...args)) };
 })();
 
 /* Energy Values Card v1.0.0 bundled for HA Ultimate Card Package */
 
 (() => {
-const ucpT = (text) => globalThis.__UCP_I18N.t(text);
-const ucpTrSchema = (schema) => globalThis.__UCP_I18N.schema(schema);
-const ucpAttach = (el) => globalThis.__UCP_I18N.attach(el);
-const ucpSetLang = (hass) => globalThis.__UCP_I18N.setLang(hass?.locale?.language || hass?.language);
+const ucpT = (text) => globalThis.__UCP_BN_I18N.t(text);
+const ucpTrSchema = (schema) => globalThis.__UCP_BN_I18N.schema(schema);
+const ucpAttach = (el) => globalThis.__UCP_BN_I18N.attach(el);
+const ucpSetLang = (hass) => globalThis.__UCP_BN_I18N.setLang(hass?.locale?.language || hass?.language);
 /*
  * Neon Bar Card for Home Assistant
  *
@@ -178,8 +179,18 @@ const ucpEntity = (domains, multiple = false, ids) => ({
 
 // Aktive Entitäten: Gruppen (Zugehörigkeit, "aktiv"-Bedingung, Farbe, Schalten per Tipp)
 
+// Quellen der Update-Karte: Schlüssel = Integration (Plattform der Entität in der Entitätsregistrierung)
+const UCP_UPDATE_SOURCES = { marketplace: "Marketplace", hassio: "Home Assistant Supervisor (apps)" };
 const UCP_CARDS = {
 
+  updates: {
+    label: "Updates",
+    defaults: { up_show_versions: true, up_sources: ["marketplace"] },
+    schema: () => [{ name: "up_sources", selector: { select: { multiple: true, mode: "dropdown", options: Object.entries(UCP_UPDATE_SOURCES).map(([value, label]) => ({ value, label })) } } },
+      { name: "entities", selector: { entity: { multiple: true, domain: "update" } } },
+      { name: "up_exclude", selector: { entity: { multiple: true, domain: "update" } } },
+      ucpGrid(ucpBool("up_show_versions"), ucpBool("up_show_all")), ucpGrid(ucpText("up_color_supervisor"), ucpText("up_color_marketplace"))],
+  },
   birdnet: {
     label: "BirdNET",
     defaults: { name: "BirdNET", entity: "sensor.birdnet_erkennungen_heute", hm_attribute: "stunden", hm_max_rows: 10, hm_sort: "total", hm_show_values: true, hm_show_legend: true, hm_show_daylight: true, hm_sun_entity: "sun.sun", follow_energy_date: true, hm_subtitle: "Species detections per hour", bn_stats_entity: "sensor.birdnet_statistik", bn_default_tab: "overview", bn_wiki_images: true },
@@ -192,13 +203,31 @@ const UCP_CARDS = {
       ucpBool("bn_wiki_images"), ucpText("bn_image_url")],
   },
 
+  wrapper: {
+    label: "Style wrapper (other cards)",
+    defaults: { hide_title: true, wrapper_padding: 4, wrapped_card: { type: "energy-date-selection" } },
+    schema: () => [{ name: "wrapped_card", selector: { object: {} } }, ucpNumber("wrapper_padding", { min: 0, max: 32, step: 1 })],
+  },
+  
 };
 
 // Style-Presets der Karten; weitere Styles hier eintragen (Schlüssel = Wert von card_style, am Host als data-card-style gesetzt)
 // Ohne Preset ("default") reagieren die Karten ausschließlich auf das aktive Home-Assistant-Theme; Preset-CSS steht in UCP_PRESETS.
+// Öffentliche Namen (YAML) = Bezeichnung im Karteneditor in Kleinschreibung, mit Bindestrichen und ohne Klammern; intern bleiben die alten Schlüssel, die alten Namen werden weiter gelesen
+const UCP_STYLE_PUBLIC = { neon_flow: "neon-flow", glassmorphism: "morph-glass", neumorphism: "morph-neo-light", neumorphism_dark: "morph-neo-dark", flat: "flat-dark-blue-orange", skeuomorph: "morph-metal" };
+const UCP_TYPE_PUBLIC = { energy: "energy-values", "power-flow": "energy-power-flow", "active-list": "active-entities", "dwd-warnings": "weather-warning", pihole: "pi-hole", wrapper: "style-wrapper" };
+const ucpReverse = (map) => Object.fromEntries(Object.entries(map).map(([key, value]) => [value, key]));
+const UCP_STYLE_INTERNAL = ucpReverse(UCP_STYLE_PUBLIC), UCP_TYPE_INTERNAL = ucpReverse(UCP_TYPE_PUBLIC);
+const ucpStyleId = (style) => UCP_STYLE_INTERNAL[style] ?? style;
+
+const ucpTypeId = (type) => UCP_TYPE_INTERNAL[type] ?? type;
 
 // Kartentypen, die das horizontale Layout (Name links, Inhalt rechts) unterstützen
 // Tap-Actions: Karte, Icon, Name, State (Standard: toggle bei Light und Switch, sonst keine)
+// Nach oben scrollen: alle scrollbaren Elemente oberhalb der Karte (auch über Shadow-DOM-Grenzen) sowie das Fenster
+// Popup-Fuß: nur zeigen, was gebraucht wird. Datumsauswahl nur, wenn eine Karte im Popup der Energie-Datumsauswahl folgt; "Nach oben" nur, wenn das Popup scrollt.
+
+// Fuß-Konfiguration auf das Nötige kürzen (Stacks/Layouts mit "cards" werden durchsucht); null = nichts übrig
 
 // Bereich "Actions": Tap-, Double-Tap- und Hold-Actions (je Karte, Icon, Name, State)
 
@@ -232,8 +261,10 @@ const ucpIconField = (name) => ({ name, selector: { icon: {} } });
 
 const UCP_LABELS = {
   bn_wiki_images: "Species images from the internet", bn_stats_entity: "Statistics entity (BirdNET package)", bn_default_tab: "Start tab", bn_image_url: "Image URL (optional)",
-   hm_max_rows: "Maximum rows", hm_sort: "Sort rows", hm_show_values: "Show values in the cells", hm_show_legend: "Show legend",   hm_show_daylight: "Show daylight bar", hm_sun_entity: "Sun entity (for the daylight bar)", 
+  hm_max_rows: "Maximum rows", hm_sort: "Sort rows", hm_show_values: "Show values in the cells", hm_show_legend: "Show legend", hm_show_daylight: "Show daylight bar", hm_sun_entity: "Sun entity (for the daylight bar)",
+     up_sources: "Show updates from", up_exclude: "Exclude update entities", up_show_versions: "Show versions", up_show_all: "Also show up-to-date entries", up_color_supervisor: "Supervisor color (optional)", up_color_marketplace: "Marketplace color (optional)",         
 
+  wrapped_card: "Wrapped card (YAML, e.g. type: energy-date-selection)", wrapper_padding: "Vertical padding of the wrapped card (px, default 4)",    
   name: "Name (optional)", 
 
           title_icon: "Icon", 
@@ -248,16 +279,16 @@ const ucpType = () => "birdnet";
 
 function ucpConfig(config) {
   const { title, ...settings } = config;
-  const card_type = ucpType(config.card_type);
+  const card_type = ucpType(ucpTypeId(config.card_type));
+  if (settings.card_style != null) settings.card_style = ucpStyleId(settings.card_style);
   const name = config.name ?? title;
   const name_marquee = config.name_marquee ?? ((!!config.marquee));
   const horizontal = config.card_layout === "horizontal" && false;
   const toggleTap = ({});
   return { detail_align: horizontal ? "left" : "center", led_segments: 24, ...toggleTap,
-    // Das große Icon in der Mitte gibt es nicht mehr (Schalten über den Status-Text)
-    hide_main_icon: true,
     ...(({})),
-    ...UCP_CARDS[card_type].defaults, ...settings, title_align: horizontal ? "left" : "center", hide_main_icon: true, name, name_marquee, type: UCP_TYPE, card_type };
+    ...UCP_CARDS[card_type].defaults, ...settings, title_align: horizontal ? "left" : "center", // Das große Icon in der Mitte gibt es nicht mehr (Schalten über den Status-Text)
+    hide_main_icon: true, name, name_marquee, type: UCP_TYPE, card_type };
 }
 
 class UltimateCardEditor extends HTMLElement {
@@ -358,14 +389,14 @@ const UCP_STYLE = /* css */ `
   .stat dt, .stat dd { margin: 0; }
   .stat dd { font-weight: 600; color: var(--stat-fg, inherit); }
   .stat[style*="--stat-fg"] dt, .stat[style*="--stat-fg"] dt ha-icon { color: var(--stat-fg); }
-  .stat dt ha-icon { color: var(--u-accent); --mdc-icon-size: 14px; margin-inline-end: 3px; }
+  .stat dt ha-icon { color: var(--title-icon-color, var(--u-accent)); --mdc-icon-size: 14px; margin-inline-end: 3px; }
   button, select { font: inherit; color: inherit; }
   button { cursor: pointer; background: var(--u-surface); border: 1px solid var(--u-edge); border-radius: 999px; }
   button:disabled, input:disabled { opacity: .45; cursor: default; }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--u-accent); outline-offset: 3px; }
   button:hover:not(:disabled) { border-color: var(--u-accent); }
   .round { display: inline-grid; place-items: center; }
-  .round { width: 36px; height: 36px; color: var(--u-accent); }
+  .round { width: 36px; height: 36px; color: var(--title-icon-color, var(--u-accent)); }
   .controls { display: flex; justify-content: center; align-items: center; gap: 7px; flex-wrap: wrap; }
   .range { width: 100%; min-width: 0; accent-color: var(--u-accent); margin: 0; }
   .hm { --hm-c: var(--title-icon-color, var(--u-accent, #3ba7d9)); container-type: inline-size; width: 100%; text-align: start; }
@@ -490,10 +521,14 @@ const UCP_STYLE = /* css */ `
   .progress { width: min(100%, 280px); height: 3px; border-radius: 4px; overflow: hidden; background: var(--u-edge); }
   .progress span { display: block; height: 100%; width: var(--level); background: var(--u-accent); }
   .round.on { color: var(--u-second); border-color: var(--u-second); }
+  :host([data-wrapper]), :host([data-cc]) { height: auto; }
+  :host([data-cc]) ha-card { padding: 8px 10px; }
   .forecast { display: flex; justify-content: center; flex-wrap: wrap; gap: 2px; margin: 12px -8px 0; }
   .forecast > div { flex: 1 1 46px; min-width: 46px; padding: 5px 3px; border: 1px solid var(--u-edge); border-radius: 9px; display: grid; justify-items: center; gap: 3px; }
   .forecast > div > span { white-space: nowrap; }
-  .forecast ha-icon { --mdc-icon-size: var(--fc-icon, 19px); color: var(--fc-icon-color, var(--u-accent)); }
+  .forecast.fit { flex-wrap: nowrap; }
+  .forecast.fit > div { flex: 1 1 0; min-width: 0; padding-inline: 1px; }
+  .forecast ha-icon { --mdc-icon-size: var(--fc-icon, 19px); color: var(--fc-icon-color, var(--title-icon-color, var(--u-accent))); }
   .chart { display: block; width: 100%; height: 100%; grid-column: 2; }
   .chart .grid { stroke: var(--u-edge); }
   .status .value { overflow-wrap: anywhere; }
@@ -603,8 +638,12 @@ class UltimateCardPackage extends HTMLElement {
 
   // Aktion ausführen (zone: card | icon | name | state; kind: tap | double | hold)
 
+  // Popup-Auslöser: öffnet das Popup beim Wechsel der Auslöser-Entität auf den Auslöser-Status (nicht beim Laden der Seite)
+
   // Popup: Abschnitt (Überschrift = Name) eines Popup-Dashboards als Dialog anzeigen.
   // Aufruf über die Aktion "Navigate" mit navigation_path "popup:<Abschnitt>" oder "popup:<Dashboard>::<Abschnitt>".
+  // Einzelne Karte des Abschnitts: Zusatz "#<Nummer>" (1 = erste Karte nach der Überschrift) oder "#<Kartenname>" (name, title, heading oder entity der Karte).
+  // Karte, die das aktuell geöffnete Popup besitzt, in dem diese Karte selbst liegt (verschachtelte Popups), sonst null
 
   _bindStateIcons(root = this._body) {
     root.querySelectorAll("[data-state-icon]").forEach((element) => {
@@ -647,6 +686,10 @@ class UltimateCardPackage extends HTMLElement {
 
   // DWD: Laufschrift für zu breite Zeilen (vertikales Layout) und Popover für aufgeklappte Beschreibungen
 
+  // Style-Hülle: bettet eine beliebige Karte (Home Assistant oder Custom) in unseren Rahmen ein; die innere Karte wird transparent, Farben kommen aus dem gewählten Style
+
+  // Innenabstand der eingebetteten Home-Assistant-Karte (.card-content) verringern; die Karte zeichnet ihren Inhalt neu, daher als Stylesheet in ihrer Shadow-DOM
+
   // WashData: zugehörige Entitäten werden über den Gerätenamen (friendly_name-Präfix) und die Rollenbezeichnung gefunden
 
   // Pi-hole: Entitäten werden über das friendly_name-Präfix und die Rollenbezeichnung (deutsch/englisch) gefunden
@@ -661,7 +704,7 @@ class UltimateCardPackage extends HTMLElement {
     card.classList.toggle("hm-light", !!m && (0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3]) < 140);
   }
 
-  // Heatmap: Zeilen (Name) x 24 Stunden aus einem Attribut {Name: [24 Werte]}, Zellfarbe nach Anzahl
+  // Tagesaktivität (BirdNET): Zeilen (Name) x 24 Stunden aus einem Attribut {Name: [24 Werte]}, Zellfarbe nach Anzahl
   _heatmap() {
     const c = this._config;
     const raw = this._attrs[c.hm_attribute || "stunden"];
@@ -907,10 +950,15 @@ class UltimateCardPackage extends HTMLElement {
 
   // Aktive Entitäten: nach Gruppen (Lampen, Fenster …) sortierte Liste dessen, was gerade an/offen ist
 
+  // Updates: Liste der update.*-Entitäten mit verfügbarem Update (nur lesen; Tippen öffnet die Details der Entität)
+
+  // Laufschrift: Dauer des Durchlaufs aus der Breite berechnen, damit die Geschwindigkeit (px pro Sekunde) immer gleich bleibt
+
   // Raum-Dialog der Minimal-Ansicht: Geräte dieses Raums in der Gruppe, bei Lampen/Schaltern mit "Alle ausschalten"
 
   // Energy Power Flow: Energie-/Leistungsfluss des Hauses als SVG (Netz, PV, Speicher, Verbraucher, E-Auto um den Wechselrichter)
   // Animationen nach jedem Neuaufbau auf dieselbe Zeitbasis legen, damit Schein und Punkte gleichmäßig und im selben Takt laufen
+  // Die Karte wird 1:1 in Pixeln gezeichnet (Schrift, Rahmen, Linien skalieren nicht); nur die Abstände zwischen den Spalten passen sich der Kartenbreite an
 
   // ===== Mediaplayer (inkl. Music-Assistant-Bibliothek) =====
 
@@ -923,6 +971,9 @@ class UltimateCardPackage extends HTMLElement {
   // Visualizer wie beim Kartentyp Clock-Music: Balken am unteren Kartenrand, Farben aus dem Cover
 
   // Suche: bevorzugt media_player/search_media, sonst der Music-Assistant-Dienst music_assistant.search
+
+  // Zeitleiste (Graph, Diagrammtyp "timeline"): je Entität eine Zeile mit Bändern für die Zeiten, in denen sie „an“ ist
+  // (Verlauf aus der Datenbank, folgt der Energie-Datumsauswahl); Bandbreite = tatsächliche Laufzeit
 
   _stopData() {
     this._dataToken = null;
@@ -947,6 +998,10 @@ class UltimateCardPackage extends HTMLElement {
     }
   }
 
+  /* --- Power Flow: Energiemodus (Zeitraum der Energie-Datumsauswahl) --- */
+
+  // Alle konfigurierten Energie- und Leistungssensoren der Karte (Leistung wird bei Bedarf per Riemann-Summe integriert)
+
   _energyPeriod() {
     const c = this._config;
     const connection = this._hass?.connection;
@@ -966,7 +1021,7 @@ class UltimateCardPackage extends HTMLElement {
     return null;
   }
 
-  // Heatmap: vergangene Tage der Energie-Datumsauswahl aus der Verlaufs-Datenbank (letzter Zustand je Tag, Attribut {Name: [24 Werte]})
+  // BirdNET: vergangene Tage der Energie-Datumsauswahl aus der Verlaufs-Datenbank (letzter Zustand je Tag, Attribut {Name: [24 Werte]})
   async _hmLoad(token) {
     const period = this._energyPeriod();
     const key = period?.key ?? "live";
