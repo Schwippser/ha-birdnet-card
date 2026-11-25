@@ -1,33 +1,19 @@
-# BirdNET-Go evaluation package for the HA BirdNET Card
-# Place this file in /config/packages/birdnet_auswertung.yaml and make sure configuration.yaml has:
-#   homeassistant:
-#     packages: !include_dir_named packages
-# It expects the MQTT discovery entities of BirdNET-Go (device name "garten" in this example):
-#   sensor.birdnet_go_garten_last_species / _confidence / _scientific_name
-# If your device has another name, replace "birdnet_go_garten" in this file (search and replace).
-# It creates sensor.birdnet_erkennungen_heute, sensor.birdnet_statistik, sensor.birdnet_arten_heute,
-# sensor.birdnet_top_art_heute and an automation that notifies about new species (adjust notify.notify).
-# Restart Home Assistant after copying (a template reload may reset the daily counters).
-#
 # BirdNET-Go Auswertung (Package)
 # Ablage: /config/packages/birdnet_auswertung.yaml
 # In configuration.yaml muss aktiv sein:
 #   homeassistant:
 #     packages: !include_dir_named packages
-# Entitäten (aus der MQTT-Discovery):
-#   sensor.birdnet_go_garten_last_species / _confidence / _scientific_name
+# Entitäten (aus der MQTT-Discovery), je Quelle/Mikrofon ein Gerät "BirdNET-Go <Name>":
+#   sensor.birdnet_go_<quelle>_last_species / _confidence / _scientific_name
+# Neue Quellen (weitere Mikrofone in BirdNET-Go) werden automatisch mitgezählt,
+# es ist keine Änderung an dieser Datei nötig (Voraussetzung: Entitäts-Präfix sensor.birdnet_go_).
 
 template:
   - triggers:
       # Jede Erkennung aktualisiert Art und Konfidenz fast gleichzeitig. Beide lösen aus,
       # doppelte Auslösung innerhalb von 1,5 s wird unten ignoriert.
-      - trigger: state
-        entity_id: sensor.birdnet_go_garten_confidence
-        not_to: [unavailable, unknown]
-        id: detection
-      - trigger: state
-        entity_id: sensor.birdnet_go_garten_last_species
-        not_to: [unavailable, unknown]
+      - trigger: event
+        event_type: state_changed
         id: detection
       - trigger: time
         at: "00:00:00"
@@ -35,6 +21,16 @@ template:
       - trigger: homeassistant
         event: start
         id: start
+    variables:
+      # Quelle = Entitäts-Präfix des auslösenden Sensors (z. B. sensor.birdnet_go_scheune)
+      src: >
+        {{ (trigger.event.data.entity_id | replace('_confidence','') | replace('_last_species',''))
+           if trigger.platform == 'event' else 'sensor.birdnet_go_garten' }}
+    conditions:
+      # Bei State-Events nur Art/Konfidenz einer beliebigen BirdNET-Go-Quelle zulassen
+      - condition: template
+        value_template: >
+          {{ trigger.platform != 'event' or (trigger.event.data.entity_id is match('sensor[.]birdnet_go_.+_(confidence|last_species)$') and trigger.event.data.new_state is not none and trigger.event.data.new_state.state not in ['unavailable','unknown']) }}
     actions:
       - delay:
           milliseconds: 500      # warten, bis auch der zweite Sensor aktualisiert ist
@@ -48,21 +44,21 @@ template:
           {% if trigger.id == 'reset' %}0
           {% elif trigger.id == 'start' %}{{ this.state | int(0) }}
           {% elif as_timestamp(now()) - last < 1.5
-                  or states('sensor.birdnet_go_garten_last_species') in ['unknown','unavailable'] %}
+                  or states(src ~ '_last_species') in ['unknown','unavailable'] %}
             {{ this.state | int(0) }}
           {% else %}{{ this.state | int(0) + 1 }}{% endif %}
         attributes:
           last_ts: >
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
-                  and states('sensor.birdnet_go_garten_last_species') not in ['unknown','unavailable'] %}
+                  and states(src ~ '_last_species') not in ['unknown','unavailable'] %}
               {{ as_timestamp(now()) }}
             {% else %}{{ last }}{% endif %}
           arten: >
             {% set a = this.attributes.get('arten', {}) %}
             {% set a = a if a is mapping else {} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'reset' %}{{ {} }}
             {% elif trigger.id == 'start' %}{{ a }}
             {% elif as_timestamp(now()) - last < 1.5 or n in ['unknown','unavailable'] %}{{ a }}
@@ -71,7 +67,7 @@ template:
             {% set h = this.attributes.get('stunden', {}) %}
             {% set h = h if h is mapping else {} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'reset' %}{{ {} }}
             {% elif trigger.id == 'start' %}{{ h }}
             {% elif as_timestamp(now()) - last < 1.5 or n in ['unknown','unavailable'] %}{{ h }}
@@ -86,12 +82,12 @@ template:
             {% set k = this.attributes.get('konf', {}) %}
             {% set k = k if k is mapping else {} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'reset' %}{{ {} }}
             {% elif trigger.id == 'start' %}{{ k }}
             {% elif as_timestamp(now()) - last < 1.5 or n in ['unknown','unavailable'] %}{{ k }}
             {% else %}
-              {% set c = states('sensor.birdnet_go_garten_confidence') | float(0) %}
+              {% set c = states(src ~ '_confidence') | float(0) %}
               {% set c = (c * 100 if c <= 1 else c) | round(1) %}
               {% set o = k.get(n, [0, 0, 0]) %}
               {{ k | combine({n: [((o[0] | float(0)) + c) | round(1), [o[1] | float(0), c] | max, as_timestamp(now()) | int]}) }}
@@ -102,7 +98,7 @@ template:
             {% set z = z if z is mapping else {} %}
             {% set z = z if z | length > 0 else {'nacht': 0, 'morgen': 0, 'tag': 0, 'abend': 0} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'reset' %}{{ {'nacht': 0, 'morgen': 0, 'tag': 0, 'abend': 0} }}
             {% elif trigger.id == 'start' %}{{ z }}
             {% elif as_timestamp(now()) - last < 1.5 or n in ['unknown','unavailable'] %}{{ z }}
@@ -113,17 +109,22 @@ template:
             {% endif %}
   # --- Erweiterung: Verlauf, Artstatistik, Tageswerte (für die UCP-Karte "BirdNET") ---
   - triggers:
-      - trigger: state
-        entity_id: sensor.birdnet_go_garten_confidence
-        not_to: [unavailable, unknown]
-        id: detection
-      - trigger: state
-        entity_id: sensor.birdnet_go_garten_last_species
-        not_to: [unavailable, unknown]
+      - trigger: event
+        event_type: state_changed
         id: detection
       - trigger: homeassistant
         event: start
         id: start
+    variables:
+      # Quelle = Entitäts-Präfix des auslösenden Sensors (z. B. sensor.birdnet_go_scheune)
+      src: >
+        {{ (trigger.event.data.entity_id | replace('_confidence','') | replace('_last_species',''))
+           if trigger.platform == 'event' else 'sensor.birdnet_go_garten' }}
+    conditions:
+      # Bei State-Events nur Art/Konfidenz einer beliebigen BirdNET-Go-Quelle zulassen
+      - condition: template
+        value_template: >
+          {{ trigger.platform != 'event' or (trigger.event.data.entity_id is match('sensor[.]birdnet_go_.+_(confidence|last_species)$') and trigger.event.data.new_state is not none and trigger.event.data.new_state.state not in ['unavailable','unknown']) }}
     actions:
       - delay:
           milliseconds: 500
@@ -135,14 +136,14 @@ template:
         # state = Gesamtzahl aller Erkennungen seit Einrichtung
         state: >
           {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-          {% set n = states('sensor.birdnet_go_garten_last_species') %}
+          {% set n = states(src ~ '_last_species') %}
           {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                 and n not in ['unknown','unavailable'] %}{{ this.state | int(0) + 1 }}
           {% else %}{{ this.state | int(0) }}{% endif %}
         attributes:
           last_ts: >
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                   and n not in ['unknown','unavailable'] %}{{ as_timestamp(now()) }}{% else %}{{ last }}{% endif %}
           # Neueste Erkennung zuerst, maximal 40: {ts, art, wiss, konf (in %)}
@@ -150,13 +151,13 @@ template:
             {% set v = this.attributes.get('verlauf', []) %}
             {% set v = v if v is sequence and v is not string else [] %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                   and n not in ['unknown','unavailable'] %}
-              {% set c = states('sensor.birdnet_go_garten_confidence') | float(0) %}
+              {% set c = states(src ~ '_confidence') | float(0) %}
               {% set c = (c * 100 if c <= 1 else c) | round(1) %}
               {% set e = {'ts': as_timestamp(now()) | int, 'art': n,
-                          'wiss': states('sensor.birdnet_go_garten_scientific_name'), 'konf': c} %}
+                          'wiss': states(src ~ '_scientific_name'), 'konf': c} %}
               {{ ([e] + v)[:40] }}
             {% else %}{{ v }}{% endif %}
           # Je Art: n (Anzahl), max/sum (Konfidenz in %), first/last (Zeitstempel), wiss
@@ -164,10 +165,10 @@ template:
             {% set a = this.attributes.get('arten_gesamt', {}) %}
             {% set a = a if a is mapping else {} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                   and n not in ['unknown','unavailable'] %}
-              {% set c = states('sensor.birdnet_go_garten_confidence') | float(0) %}
+              {% set c = states(src ~ '_confidence') | float(0) %}
               {% set c = (c * 100 if c <= 1 else c) | round(1) %}
               {% set s = a.get(n, {}) %}
               {{ a | combine({n: {'n': (s.get('n', 0) | int(0)) + 1,
@@ -175,14 +176,14 @@ template:
                                   'sum': ((s.get('sum', 0) | float(0)) + c) | round(1),
                                   'first': s.get('first', as_timestamp(now()) | int),
                                   'last': as_timestamp(now()) | int,
-                                  'wiss': states('sensor.birdnet_go_garten_scientific_name')}}) }}
+                                  'wiss': states(src ~ '_scientific_name')}}) }}
             {% else %}{{ a }}{% endif %}
           # Erkennungen pro Tag (JJJJ-MM-TT), die letzten 60 Tage
           tage: >
             {% set t = this.attributes.get('tage', {}) %}
             {% set t = t if t is mapping else {} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                   and n not in ['unknown','unavailable'] %}
               {% set d = now().strftime('%Y-%m-%d') %}
@@ -197,7 +198,7 @@ template:
             {% set z = z if z is mapping else {} %}
             {% set z = z if z | length > 0 else {'nacht': 0, 'morgen': 0, 'tag': 0, 'abend': 0} %}
             {% set last = this.attributes.get('last_ts', 0) | float(0) %}
-            {% set n = states('sensor.birdnet_go_garten_last_species') %}
+            {% set n = states(src ~ '_last_species') %}
             {% if trigger.id == 'detection' and as_timestamp(now()) - last >= 1.5
                   and n not in ['unknown','unavailable'] %}
               {% set h = now().hour %}
@@ -231,19 +232,24 @@ automation:
     triggers:
       - trigger: state
         entity_id: sensor.birdnet_erkennungen_heute
+    variables:
+      # zuletzt aktualisierte Quelle (Präfix), z. B. sensor.birdnet_go_scheune
+      src: >
+        {% set l = states.sensor | selectattr('entity_id', 'search', '^sensor[.]birdnet_go_.+_last_species$') | rejectattr('state', 'in', ['unknown', 'unavailable']) | sort(attribute='last_updated') | list %}
+        {{ (l[-1].entity_id | replace('_last_species', '')) if l | length > 0 else 'sensor.birdnet_go_garten' }}
     conditions:
       - condition: template
         value_template: >
-          {% set art = states('sensor.birdnet_go_garten_last_species') %}
-          {{ (state_attr('sensor.birdnet_erkennungen_heute','arten') or {}).get(art, 0) | int(0) == 1 }}
-      - condition: numeric_state
-        entity_id: sensor.birdnet_go_garten_confidence
-        above: 0.79        # falls die Konfidenz in Prozent kommt (z. B. 87): 79 eintragen
+          {% set art = states(src ~ '_last_species') %}
+          {% set c = states(src ~ '_confidence') | float(0) %}
+          {% set c = c * 100 if c <= 1 else c %}
+          {{ (state_attr('sensor.birdnet_erkennungen_heute','arten') or {}).get(art, 0) | int(0) == 1 and c > 79 }}
     actions:
       - action: notify.notify          # anpassen: z. B. notify.mobile_app_<handy>
         data:
           title: "Neue Vogelart heute"
           message: >
-            {{ states('sensor.birdnet_go_garten_last_species') }}
-            ({{ states('sensor.birdnet_go_garten_scientific_name') }}),
-            Konfidenz {{ states('sensor.birdnet_go_garten_confidence') }}
+            {{ states(src ~ '_last_species') }}
+            ({{ states(src ~ '_scientific_name') }}),
+            Konfidenz {{ states(src ~ '_confidence') }},
+            Quelle: {{ src.split('birdnet_go_')[-1] | replace('_', ' ') | title }}
